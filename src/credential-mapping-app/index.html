@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Credential Mapping Manager</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f9fa;
+      color: #222;
+      min-width: 350px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .container {
+      padding: 18px 18px 10px 18px;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.3em;
+      letter-spacing: 0.5px;
+      color: #2a3a4a;
+    }
+    .status {
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #3a7bd5;
+    }
+    .controls {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .controls button {
+      padding: 4px 14px;
+      font-size: 0.95em;
+      border: 1px solid #b0b8c1;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .controls button:hover {
+      background: #eaf1fb;
+    }
+    .toggle {
+      margin-left: 8px;
+      font-size: 0.97em;
+      color: #444;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 16px;
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    th, td {
+      border: none;
+      padding: 7px 10px;
+      text-align: left;
+      font-size: 0.97em;
+    }
+    th {
+      background: #f0f4f8;
+      color: #3a3a3a;
+      font-weight: 600;
+    }
+    tr {
+      transition: background 0.15s;
+    }
+    tr:hover td {
+      background: #f5faff;
+    }
+    .danger {
+      color: #d7263d;
+      cursor: pointer;
+      font-weight: 500;
+      margin-right: 8px;
+    }
+    .edit {
+      color: #0074d9;
+      cursor: pointer;
+      font-weight: 500;
+      margin-right: 8px;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    form label {
+      font-size: 0.97em;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    form input[type="text"] {
+      padding: 4px 8px;
+      border: 1px solid #b0b8c1;
+      border-radius: 3px;
+      font-size: 0.97em;
+      background: #f9fbfc;
+      width: 140px;
+    }
+    form button {
+      padding: 4px 14px;
+      font-size: 0.95em;
+      border: 1px solid #b0b8c1;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    form button:hover {
+      background: #eaf1fb;
+    }
+    @media (max-width: 500px) {
+      .container { padding: 8px; }
+      form input[type="text"] { width: 90px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Credential Mapping Manager</h2>
+    <div class="status" id="server-status">Server: Stopped</div>
+    <div class="controls" style="justify-content: space-between;">
+      <div>
+        <button id="start-server">Start Server</button>
+        <button id="stop-server">Stop Server</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <button id="refresh-btn" title="Refresh mappings" style="font-size:1.2em;background:none;border:none;cursor:pointer;">&#x21bb;</button>
+        <button id="settings-btn" title="Settings" style="font-size:1.2em;background:none;border:none;cursor:pointer;">&#9881;</button>
+      </div>
+    </div>
+    <div id="toast" style="display:none;position:fixed;top:18px;right:18px;z-index:1000;padding:10px 18px;background:#222;color:#fff;border-radius:5px;font-size:1em;box-shadow:0 2px 8px rgba(0,0,0,0.15)"></div>
+    <div style="max-height:220px;overflow-y:auto;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <table id="mapping-table">
+        <thead>
+          <tr><th>Type</th><th>ID</th><th>Name</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="mapping-body">
+          <!-- Rows will be populated here -->
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin-bottom: 4px;">Add/Edit Mapping</h3>
+    <form id="mapping-form">
+      <input type="hidden" id="edit-type" />
+      <label>Type:
+        <select id="type" required style="width:150px;"></select>
+      </label>
+      <label>ID: <input type="text" id="id" required /></label>
+      <label>Name: <input type="text" id="name" required /></label>
+      <button type="submit">Save</button>
+      <button type="button" id="cancel-edit">Cancel</button>
+    </form>
+    <div id="settings-dialog" style="display:none;position:fixed;top:50px;left:50%;transform:translateX(-50%);background:#fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.18);padding:24px 28px;z-index:2000;min-width:320px;">
+      <h3>Credential Types Settings</h3>
+      <div id="types-list" style="max-height:180px;overflow-y:auto;margin-bottom:12px;"></div>
+      <input type="text" id="new-type-input" placeholder="Add new type..." style="width:60%;margin-right:8px;" />
+      <button id="add-type-settings">Add</button>
+      <button id="restore-types">Restore Defaults</button>
+      <button id="close-settings" style="float:right;">Close</button>
+    </div>
+    <button id="copy-bookmarklet" style="position:fixed;bottom:18px;right:18px;z-index:1001;font-size:0.98em;padding:6px 14px;border-radius:5px;background:#f0f4f8;border:1px solid #b0b8c1;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;">Script</button>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html> 

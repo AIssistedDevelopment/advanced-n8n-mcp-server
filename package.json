@@ -1,5 +1,5 @@
 {
-  "name": "@illuminaresolutions/n8n-mcp-server",
+  "name": "advanced-n8n-mcp-server",
   "description": "An MCP server that provides access to n8n workflows, executions, credentials, and more through the Model Context Protocol",
   "version": "1.0.0",
   "type": "module",
@@ -18,12 +18,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/illuminaresolutions/n8n-mcp-server.git"
+    "url": "git+https://github.com/AIssistedDevelopment/advanced-n8n-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/illuminaresolutions/n8n-mcp-server/issues"
+    "url": "https://github.com/AIssistedDevelopment/advanced-n8n-mcp-server/issues"
   },
-  "homepage": "https://github.com/illuminaresolutions/n8n-mcp-server#readme",
+  "homepage": "https://github.com/AIssistedDevelopment/advanced-n8n-mcp-server#readme",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -42,15 +42,19 @@
     "start": "node build/index.js",
     "prepublishOnly": "npm run build",
     "clean": "rm -rf build",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "credential-mapping-app": "electron ./src/credential-mapping-app",
+    "package-credential-mapping-app": "electron-packager ./src/credential-mapping-app CredentialMappingApp --platform=win32 --arch=x64 --out=dist --overwrite"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.7.0",
     "zod": "^3.22.4",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "electron": "^28.2.3"
   }
 }

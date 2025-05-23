@@ -56,3 +56,22 @@
    - Document only what exists
    - Keep focus on current functionality
    - Clear, concise documentation
+
+## Credential Mapping GUI (Electron App)
+
+- The Electron app for credential mapping is located in `src/credential-mapping-app/`.
+- It is designed for use only within this MCP repository and is not a standalone product.
+- To run the app in development mode:
+  1. Install dependencies: `npm install` (from the repo root)
+  2. Start the app: `npm run credential-mapping-app`
+- The app provides a GUI for viewing, editing, and deleting entries in `credentials-map.json` (mappings) and managing types in `credential-types.json`. Both files are always in the same folder as the Electron app (.exe) and the server. All must be together for correct operation.
+  - **credentials-map.json**: Only actual mappings (type → {id, name})
+  - **credential-types.json**: Master list of types and enabled/disabled state
+- See the main README for user instructions and workflow integration.
+
+### UI/UX Notes
+- The credential mapping table is scrollable for large lists.
+- The refresh (⟳) and settings (⚙) buttons are now icons in the top right corner.
+- The bookmarklet/script copy is now a small 'Script' button in the bottom right, replacing the old input/label.
+- The script button is unobtrusive and always available for quick copying.
+- All UI actions provide toast notifications for feedback.

@@ -28,6 +28,8 @@ interface N8nWorkflow {
   createdAt: string;
   updatedAt: string;
   tags: string[];
+  nodes: any[];
+  connections: Record<string, any>;
 }
 
 interface N8nWorkflowList {
@@ -375,6 +377,56 @@ class N8nClient {
   async getCredentialSchema(credentialTypeName: string): Promise<any> {
     return this.makeRequest(`/credentials/schema/${credentialTypeName}`);
   }
+
+  async getCredential(id: string): Promise<any> {
+    return this.makeRequest(`/credentials/${id}`);
+  }
+
+  async listCredentials(): Promise<any> {
+    return this.makeRequest('/credentials');
+  }
+
+  async listCredentialsByType(credentialType: string): Promise<any> {
+    const allCredentials = await this.listCredentials();
+    return {
+      data: allCredentials.data.filter((cred: any) => cred.type === credentialType)
+    };
+  }
+
+  async assignCredentialToWorkflowNode(workflowId: string, nodeId: string, credentialId: string, credentialType: string): Promise<any> {
+    // Get current workflow
+    const workflow = await this.getWorkflow(workflowId);
+    // Find the target node
+    const nodeIndex = workflow.nodes.findIndex((node: any) => node.id === nodeId);
+    if (nodeIndex === -1) {
+      throw new Error(`Node ${nodeId} not found in workflow ${workflowId}`);
+    }
+    // Get credential details for the assignment
+    const credential = await this.getCredential(credentialId);
+    // Add credentials object to the node
+    if (!workflow.nodes[nodeIndex].credentials) {
+      workflow.nodes[nodeIndex].credentials = {};
+    }
+    workflow.nodes[nodeIndex].credentials[credentialType] = {
+      id: credentialId,
+      name: credential.name
+    };
+    // Update the entire workflow
+    return this.updateWorkflow(workflowId, workflow);
+  }
+
+  async findCredentialsForNodeType(nodeType: string): Promise<any> {
+    const nodeCredentialMap: Record<string, string[]> = {
+      'n8n-nodes-base.httpRequest': ['openAiApi', 'httpHeaderAuth', 'httpBasicAuth', 'oAuth2Api'],
+      'n8n-nodes-base.openAi': ['openAiApi'],
+      // Expand this mapping as needed
+    };
+    const compatibleTypes = nodeCredentialMap[nodeType] || [];
+    const allCredentials = await this.listCredentials();
+    return {
+      data: allCredentials.data.filter((cred: any) => compatibleTypes.includes(cred.type))
+    };
+  }
 }
 
 // Create an MCP server
@@ -648,44 +700,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["clientId", "id"]
         }
       },
-      {
-        name: "create-credential",
-        description: "Create a credential that can be used by nodes of the specified type. The credential type name can be found in the n8n UI when creating credentials (e.g., 'cloudflareApi', 'githubApi', 'slackOAuth2Api'). Use get-credential-schema first to see what fields are required for the credential type you want to create.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            clientId: { type: "string" },
-            name: { type: "string" },
-            type: { type: "string" },
-            data: { type: "object" }
-          },
-          required: ["clientId", "name", "type", "data"]
-        }
-      },
-      {
-        name: "delete-credential",
-        description: "Delete a credential by ID. You must be the owner of the credentials.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            clientId: { type: "string" },
-            id: { type: "string" }
-          },
-          required: ["clientId", "id"]
-        }
-      },
-      {
-        name: "get-credential-schema",
-        description: "Show credential data schema for a specific credential type. The credential type name can be found in the n8n UI when creating credentials (e.g., 'cloudflareApi', 'githubApi', 'slackOAuth2Api'). This will show you what fields are required for creating credentials of this type.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            clientId: { type: "string" },
-            credentialTypeName: { type: "string" }
-          },
-          required: ["clientId", "credentialTypeName"]
-        }
-      },
       // Execution Management Tools
       {
         name: "list-executions",
@@ -845,7 +859,47 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["clientId"]
         }
-      }
+      },
+      // --- Credential Management Tools ---
+      // Only include tools that work with known credential IDs. Listing credentials is not supported in n8n Community Edition API.
+      {
+        name: "create-credential",
+        description: "Create a credential that can be used by nodes of the specified type. The credential type name can be found in the n8n UI when creating credentials (e.g., 'cloudflareApi', 'githubApi', 'slackOAuth2Api'). Use get-credential-schema first to see what fields are required for the credential type you want to create.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            clientId: { type: "string" },
+            name: { type: "string" },
+            type: { type: "string" },
+            data: { type: "object" }
+          },
+          required: ["clientId", "name", "type", "data"]
+        }
+      },
+      {
+        name: "delete-credential",
+        description: "Delete a credential by ID. You must be the owner of the credentials.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            clientId: { type: "string" },
+            id: { type: "string" }
+          },
+          required: ["clientId", "id"]
+        }
+      },
+      {
+        name: "get-credential-schema",
+        description: "Show credential data schema for a specific credential type. The credential type name can be found in the n8n UI when creating credentials (e.g., 'cloudflareApi', 'githubApi', 'slackOAuth2Api'). This will show you what fields are required for creating credentials of this type.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            clientId: { type: "string" },
+            credentialTypeName: { type: "string" }
+          },
+          required: ["clientId", "credentialTypeName"]
+        }
+      },
     ]
   };
 });
